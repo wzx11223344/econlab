@@ -1,0 +1,7 @@
+# Minimal requirements for launching demos on Binder
+jupyterlab
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn

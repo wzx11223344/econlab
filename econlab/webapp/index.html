@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EconomicsLab - Interactive Economics Computing Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@12.2.1/lib/browser/math.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="#4f8cff"/>
+                        <path d="M8 22 L16 6 L24 22" stroke="white" stroke-width="2" fill="none"/>
+                        <line x1="12" y1="18" x2="20" y2="18" stroke="white" stroke-width="1.5"/>
+                    </svg>
+                    <span>EconomicsLab</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-section="dashboard">
+                    <span class="nav-icon">&#9632;</span> Dashboard
+                </a>
+                <a href="#datasets" class="nav-item" data-section="datasets">
+                    <span class="nav-icon">&#9776;</span> Datasets
+                </a>
+                <a href="#models" class="nav-item" data-section="models">
+                    <span class="nav-icon">&#9881;</span> Models
+                </a>
+                <a href="#simulation" class="nav-item" data-section="simulation">
+                    <span class="nav-icon">&#9654;</span> Simulation
+                </a>
+                <a href="#about" class="nav-item" data-section="about">
+                    <span class="nav-icon">&#9432;</span> About
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <span class="version">v0.1.0</span>
+                <a href="https://github.com/econlab/econlab" target="_blank" class="github-link">GitHub</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="section-header">
+                    <h1>Economics Computing Dashboard</h1>
+                    <p class="subtitle">Interactive econometric modeling and data exploration</p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-models">5</div>
+                        <div class="stat-label">Models Available</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-datasets">3</div>
+                        <div class="stat-label">Built-in Datasets</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Open Source</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">MIT</div>
+                        <div class="stat-label">License</div>
+                    </div>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="card">
+                    <h2>Model Configuration</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="model-select">Econometric Model</label>
+                            <select id="model-select" class="form-control">
+                                <option value="ols">Ordinary Least Squares (OLS)</option>
+                                <option value="iv">Instrumental Variables (IV / 2SLS)</option>
+                                <option value="did">Difference-in-Differences (DiD)</option>
+                                <option value="fe">Panel Fixed Effects (FE)</option>
+                                <option value="logit">Logit / Probit</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dataset-select">Dataset</label>
+                            <select id="dataset-select" class="form-control">
+                                <option value="nlsy">NLSY (Mock Panel)</option>
+                                <option value="angrist_krueger">Angrist-Krueger 1991</option>
+                                <option value="card_minwage">Card 1995 Min. Wage</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Parameters -->
+                    <div id="model-params" class="model-params">
+                        <!-- OLS Parameters (default) -->
+                        <div id="params-ols" class="params-panel active">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ols-y">Dependent Variable (Y)</label>
+                                    <select id="ols-y" class="form-control">
+                                        <option value="log_wage">log(Wage)</option>
+                                        <option value="wage">Wage</option>
+                                        <option value="hours">Hours Worked</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ols-x">Independent Variables (X)</label>
+                                    <select id="ols-x" class="form-control" multiple size="4">
+                                        <option value="education" selected>Education</option>
+                                        <option value="experience" selected>Experience</option>
+                                        <option value="age">Age</option>
+                                        <option value="female">Female</option>
+                                        <option value="union">Union</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="ols-robust" checked> Heteroskedasticity-robust SE (HC1)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- IV Parameters -->
+                        <div id="params-iv" class="params-panel">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="iv-y">Dependent Variable (Y)</label>
+                                    <select id="iv-y" class="form-control">
+                                        <option value="log_wage">log(Wage)</option>
+                                        <option value="wage">Wage</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="iv-endog">Endogenous Variable</label>
+                                    <select id="iv-endog" class="form-control">
+                                        <option value="education">Education</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="iv-instrument">Instrument (Z)</label>
+                                    <select id="iv-instrument" class="form-control">
+                                        <option value="quarter_born">Quarter of Birth</option>
+                                        <option value="yob">Year of Birth</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DiD Parameters -->
+                        <div id="params-did" class="params-panel">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="did-y">Outcome Variable</label>
+                                    <select id="did-y" class="form-control">
+                                        <option value="fte">FTE Employment</option>
+                                        <option value="wage">Wage</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="did-treat">Treatment Variable</label>
+                                    <select id="did-treat" class="form-control">
+                                        <option value="treated">Treated (NJ = 1, PA = 0)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="did-post">Post-Period Variable</label>
+                                    <select id="did-post" class="form-control">
+                                        <option value="post">Post (After = 1, Before = 0)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FE Parameters -->
+                        <div id="params-fe" class="params-panel">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fe-y">Dependent Variable</label>
+                                    <select id="fe-y" class="form-control">
+                                        <option value="log_wage">log(Wage)</option>
+                                        <option value="wage">Wage</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fe-x">Time-Varying X</label>
+                                    <select id="fe-x" class="form-control" multiple size="4">
+                                        <option value="experience" selected>Experience</option>
+                                        <option value="hours" selected>Hours</option>
+                                        <option value="tenure">Tenure</option>
+                                        <option value="union">Union</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fe-entity">Entity (Fixed Effects)</label>
+                                    <select id="fe-entity" class="form-control">
+                                        <option value="id">Individual ID</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Logit Parameters -->
+                        <div id="params-logit" class="params-panel">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="logit-y">Binary Outcome</label>
+                                    <select id="logit-y" class="form-control">
+                                        <option value="union">Union Membership</option>
+                                        <option value="female">Female</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="logit-model-type">Model Type</label>
+                                    <select id="logit-model-type" class="form-control">
+                                        <option value="logit">Logit</option>
+                                        <option value="probit">Probit</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="btn-run-model" class="btn btn-primary">Run Model</button>
+                        <button id="btn-reset" class="btn btn-secondary">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="card" id="results-card" style="display:none;">
+                    <h2>Estimation Results</h2>
+
+                    <!-- Chart -->
+                    <div id="results-chart" class="chart-container"></div>
+
+                    <!-- Table -->
+                    <div class="table-container">
+                        <table id="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Variable</th>
+                                    <th>Coefficient</th>
+                                    <th>Std. Error</th>
+                                    <th>t-statistic</th>
+                                    <th>p-value</th>
+                                    <th>95% CI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Model Stats -->
+                    <div class="model-stats" id="model-stats"></div>
+                </div>
+            </section>
+
+            <!-- Datasets Section -->
+            <section id="datasets-section" class="content-section">
+                <div class="section-header">
+                    <h1>Built-in Datasets</h1>
+                    <p class="subtitle">Classic economics datasets for research and teaching</p>
+                </div>
+                <div class="datasets-grid">
+                    <div class="card dataset-card">
+                        <h3>NLSY (National Longitudinal Survey of Youth)</h3>
+                        <span class="badge">Mock Panel Data</span>
+                        <p>Simulated panel data with 5,000 individuals across 10 years. Includes demographics, education, experience, wages, and union status.</p>
+                        <ul>
+                            <li>Observations: 50,000</li>
+                            <li>Variables: 12</li>
+                            <li>Time Range: 1979-1988</li>
+                        </ul>
+                        <code>from econlab.datasets import load_nlsy</code>
+                    </div>
+                    <div class="card dataset-card">
+                        <h3>Angrist-Krueger (1991)</h3>
+                        <span class="badge">Classic</span>
+                        <p>Returns to education using quarter-of-birth as an instrument. Cross-sectional QOB data extracted from Census records.</p>
+                        <ul>
+                            <li>Observations: 329,509</li>
+                            <li>Variables: 8</li>
+                            <li>Reference: QJE 1991</li>
+                        </ul>
+                        <code>from econlab.datasets import load_angrist_krueger</code>
+                    </div>
+                    <div class="card dataset-card">
+                        <h3>Card & Krueger (1994) / Card (1995)</h3>
+                        <span class="badge">DiD</span>
+                        <p>Minimum wage and employment in fast-food restaurants. New Jersey vs. Pennsylvania before and after the 1992 NJ minimum wage increase.</p>
+                        <ul>
+                            <li>Observations: 410</li>
+                            <li>Variables: 6</li>
+                            <li>Reference: AER 1994</li>
+                        </ul>
+                        <code>from econlab.datasets import load_card_minwage</code>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Models Section -->
+            <section id="models-section" class="content-section">
+                <div class="section-header">
+                    <h1>Available Models</h1>
+                    <p class="subtitle">Econometric techniques supported by EconomicsLab</p>
+                </div>
+                <div class="models-grid">
+                    <div class="card model-card">
+                        <h3>Ordinary Least Squares (OLS)</h3>
+                        <p>The workhorse of econometrics. Estimates linear relationships between variables with standard errors (classical, HC, cluster).</p>
+                        <div class="model-math">y = X&beta; + &epsilon;</div>
+                    </div>
+                    <div class="card model-card">
+                        <h3>Instrumental Variables (IV/2SLS)</h3>
+                        <p>Addresses endogeneity using external instruments. Two-stage least squares estimation with first-stage F-statistics.</p>
+                        <div class="model-math">y = X&beta; + &epsilon;, X = Z&pi; + &nu;</div>
+                    </div>
+                    <div class="card model-card">
+                        <h3>Difference-in-Differences (DiD)</h3>
+                        <p>Causal inference with panel data. Estimates treatment effects using pre/post and treatment/control variation.</p>
+                        <div class="model-math">y&#8345;&#8353; = &alpha; + &tau;T&#8345;P&#8353; + &beta;X + &epsilon;</div>
+                    </div>
+                    <div class="card model-card">
+                        <h3>Panel Fixed Effects</h3>
+                        <p>Controls for time-invariant unobserved heterogeneity. Within-transformation or first-differencing.</p>
+                        <div class="model-math">y&#8345;&#8353; = &alpha;&#8345; + &beta;X&#8345;&#8353; + &epsilon;&#8345;&#8353;</div>
+                    </div>
+                    <div class="card model-card">
+                        <h3>Logit / Probit</h3>
+                        <p>Binary choice models for dichotomous dependent variables. Maximum likelihood estimation with marginal effects.</p>
+                        <div class="model-math">P(Y=1|X) = F(X&beta;)</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Simulation Section -->
+            <section id="simulation-section" class="content-section">
+                <div class="section-header">
+                    <h1>Monte Carlo Simulation</h1>
+                    <p class="subtitle">Explore estimator properties through simulation</p>
+                </div>
+                <div class="card">
+                    <h2>Simulation Parameters</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sim-n">Sample Size (n)</label>
+                            <input type="number" id="sim-n" class="form-control" value="100" min="10" max="10000">
+                        </div>
+                        <div class="form-group">
+                            <label for="sim-reps">Repetitions</label>
+                            <input type="number" id="sim-reps" class="form-control" value="500" min="10" max="5000">
+                        </div>
+                        <div class="form-group">
+                            <label for="sim-beta">True Beta</label>
+                            <input type="number" id="sim-beta" class="form-control" value="1.5" step="0.1">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btn-run-sim" class="btn btn-primary">Run Simulation</button>
+                    </div>
+                </div>
+                <div class="card" id="sim-results-card" style="display:none;">
+                    <h2>Simulation Results</h2>
+                    <div id="sim-chart" class="chart-container"></div>
+                    <div id="sim-stats" class="model-stats"></div>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about-section" class="content-section">
+                <div class="section-header">
+                    <h1>About EconomicsLab</h1>
+                </div>
+                <div class="card">
+                    <h2>What is EconomicsLab?</h2>
+                    <p>EconomicsLab is an open-source, interactive economics computing laboratory designed for researchers, educators, and students. It combines the analytical power of Python's scientific stack with the accessibility of a web-based dashboard.</p>
+
+                    <h3>Key Features</h3>
+                    <ul>
+                        <li><strong>Built-in Datasets</strong> -- Classic economics datasets ready for analysis with one function call.</li>
+                        <li><strong>Multiple Models</strong> -- OLS, IV/2SLS, DiD, Panel FE, Logit/Probit, and more.</li>
+                        <li><strong>Interactive Dashboard</strong> -- Run models and visualize results without writing code.</li>
+                        <li><strong>Jupyter Integration</strong> -- Comprehensive tutorial notebook for learning and teaching.</li>
+                        <li><strong>Open Source</strong> -- MIT licensed, community-driven development.</li>
+                    </ul>
+
+                    <h3>Technology Stack</h3>
+                    <ul>
+                        <li>Python (numpy, pandas, scipy, statsmodels)</li>
+                        <li>Plotly.js for interactive visualization</li>
+                        <li>Jupyter for reproducible research</li>
+                    </ul>
+
+                    <h3>Citation</h3>
+                    <pre class="citation">@software{econlab2026,
+  author    = {EconomicsLab Contributors},
+  title     = {EconomicsLab: Interactive Economics Computing Laboratory},
+  year      = {2026},
+  version   = {0.1.0},
+  url       = {https://github.com/econlab/econlab},
+  license   = {MIT}
+}</pre>
+
+                    <h3>References</h3>
+                    <ul class="ref-list">
+                        <li>Angrist, J. D. & Krueger, A. B. (1991). "Does Compulsory School Attendance Affect Schooling and Earnings?" <em>QJE</em>, 106(4).</li>
+                        <li>Card, D. & Krueger, A. B. (1994). "Minimum Wages and Employment: A Case Study of the Fast-Food Industry." <em>AER</em>, 84(4).</li>
+                        <li>Card, D. (1995). "Using Geographic Variation in College Proximity to Estimate the Return to Schooling." In <em>Aspects of Labour Market Behaviour</em>.</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
